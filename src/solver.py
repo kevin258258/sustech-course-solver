@@ -46,7 +46,7 @@ def _release(added: list[tuple[int, int]], occupied: set[tuple[int, int]]) -> No
 
 def solve(
     courses: list[Course],
-    max_results: int = 100,
+    max_results: int = 250,
 ) -> list[list[Section]]:
     """求解所有不冲突的课表组合。
 

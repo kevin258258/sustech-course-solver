@@ -1,0 +1,14 @@
+[project]
+name = "sustech-course-solver"
+version = "1.0.0"
+description = "南方科技大学课表无冲突组合求解器"
+requires-python = ">=3.10"
+dependencies = [
+    "requests",
+    "pyyaml",
+    "rich",
+    "colorama",
+]
+
+[project.scripts]
+solve = "src.main:main"

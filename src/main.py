@@ -149,7 +149,7 @@ def main() -> None:
 
     # 4. 求解
     console.print(f"\n[bold]步骤 4/4: 求解无冲突课表[/bold]")
-    results = solve(courses, max_results=100)
+    results = solve(courses, max_results=2000)
     print_solve_summary(courses, results)
 
     # 展示结果

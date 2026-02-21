@@ -23,9 +23,13 @@ cd sustech-course-solver
 
 ### 2. 安装依赖
 
-需要 Python 3.10+。
+需要 Python 3.10+。推荐使用 [uv](https://docs.astral.sh/uv/) 管理环境：
 
 ```bash
+# 方式一：uv（推荐）
+uv sync
+
+# 方式二：pip
 pip install -r requirements.txt
 ```
 
@@ -60,6 +64,10 @@ export SUSTECH_PWD="你的CAS密码"
 ### 4. 运行
 
 ```bash
+# 方式一：uv
+uv run python src/main.py
+
+# 方式二：直接运行（需已安装依赖）
 python src/main.py
 ```
 
@@ -117,7 +125,8 @@ _HARDCODED: dict[str, list[Section]] = {
 ```
 sustech-course-solver/
 ├── config.yaml.example  # 配置模板（复制为 config.yaml 使用）
-├── requirements.txt     # Python 依赖
+├── pyproject.toml       # 项目元数据与依赖（uv / pip 均可用）
+├── requirements.txt     # pip 依赖（兼容用）
 ├── README.md
 └── src/
     ├── main.py          # 主入口
