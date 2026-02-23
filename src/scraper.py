@@ -32,6 +32,80 @@ COURSE_TYPES: dict[str, str] = {
 TIME_PATTERN = re.compile(r"星期([一二三四五六日])第(\d+)-(\d+)节")
 
 
+def fetch_selected_courses(
+    headers: dict[str, str],
+    semester_info: dict,
+) -> tuple[list[Section], int, int]:
+    """获取当前已选课程列表和积分信息。
+
+    Returns
+    -------
+    tuple[list[Section], int, int]
+        (已选课程教学班列表, 已用积分, 剩余积分)
+    """
+    # 用 bxxk 类型查询，返回中包含 yxkcList（已选课程）和积分信息
+    data = {
+        "cxsfmt": 0,
+        "p_pylx": 1,
+        "p_xn": semester_info["p_xn"],
+        "p_xq": semester_info["p_xq"],
+        "p_xnxq": semester_info["p_xnxq"],
+        "p_xkfsdm": "bxxk",
+    }
+    resp = requests.post(
+        QUERY_COURSES_URL,
+        data=data,
+        headers=headers,
+        verify=False,
+        timeout=30,
+    )
+    resp.raise_for_status()
+    raw = resp.json()
+
+    selected: list[Section] = []
+    yxkc_list = raw.get("yxkcList", [])
+    if isinstance(yxkc_list, list):
+        for item in yxkc_list:
+            course_name = item.get("rwmc", "未知")
+            section_id = item.get("id", "")
+            teacher = item.get("dgjsmc", "") or ""
+            points = item.get("xkxs", "?")
+
+            time_str = ""
+            for tf in ["sksj", "sksjms", "sksjStr", "sksjdd"]:
+                if item.get(tf):
+                    time_str = str(item[tf])
+                    break
+            if not time_str:
+                item_str = json.dumps(item, ensure_ascii=False)
+                if TIME_PATTERN.search(item_str):
+                    time_str = item_str
+
+            time_slots = parse_time_slots(time_str)
+            sec = Section(
+                course_name=course_name,
+                section_name=f"{course_name} - {teacher}" if teacher else course_name,
+                section_id=section_id,
+                course_type=item.get("p_xkfsdm", ""),
+                time_slots=time_slots,
+                teacher=teacher,
+            )
+            selected.append(sec)
+
+    # 积分信息
+    xsxk_page = raw.get("xsxkPage", {})
+    xkgz = xsxk_page.get("xkgzszOne", {})
+    total_points = int(float(xkgz.get("jfxs", 0))) if xkgz else 0
+    used_points = 0
+    for item in yxkc_list:
+        xkxs = item.get("xkxs")
+        if xkxs is not None:
+            used_points += int(float(xkxs))
+    remaining_points = total_points
+
+    return selected, used_points, remaining_points
+
+
 def get_semester_info(headers: dict[str, str]) -> dict:
     """获取当前学期信息。
 

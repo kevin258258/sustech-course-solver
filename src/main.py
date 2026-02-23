@@ -18,7 +18,8 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from src.auth import interactive_login, cas_login
 from src.scraper import get_semester_info, get_courses_for_selection
 from src.solver import solve, print_solve_summary
-from src.display import display_all_schedules
+from src.display import display_all_schedules, display_schedule
+from src.selector import select_schedule
 
 console = Console()
 
@@ -152,8 +153,57 @@ def main() -> None:
     results = solve(courses, max_results=2000)
     print_solve_summary(courses, results)
 
-    # 展示结果
-    display_all_schedules(results)
+    # 展示结果并支持选课
+    if not results:
+        display_all_schedules(results)
+        return
+
+    total = len(results)
+    console.print(Panel(
+        f"共找到 [bold green]{total}[/bold green] 种可行方案\n"
+        f"输入 [bold]方案编号[/bold] 查看详情，输入 [bold]s编号[/bold]（如 s1）直接选课，输入 [bold]q[/bold] 退出",
+        title="求解结果",
+        border_style="green",
+    ))
+
+    while True:
+        try:
+            user_input = input(f"\n请输入操作 (1-{total} 查看 / s1-s{total} 选课 / q 退出): ").strip()
+        except (EOFError, KeyboardInterrupt):
+            break
+
+        if not user_input or user_input.lower() == "q":
+            break
+
+        # 选课模式: s1, s2, ...
+        if user_input.lower().startswith("s"):
+            num_str = user_input[1:]
+            if num_str.isdigit():
+                idx = int(num_str)
+                if 1 <= idx <= total:
+                    schedule = results[idx - 1]
+                    console.print(f"\n[bold yellow]即将选择方案 {idx}:[/bold yellow]")
+                    display_schedule(schedule, idx, total)
+                    confirm = input("\n确认选课? 输入 YES 确认，其他取消: ").strip()
+                    if confirm == "YES":
+                        console.print("\n[bold]开始选课...[/bold]")
+                        sel_results = select_schedule(headers, semester_info, schedule)
+                        console.print(f"\n[bold]选课完成！[/bold]")
+                        ok = sum(1 for _, s, _ in sel_results if s)
+                        fail = sum(1 for _, s, _ in sel_results if not s)
+                        console.print(f"  成功: [green]{ok}[/green]  失败: [red]{fail}[/red]")
+                    else:
+                        console.print("[dim]已取消[/dim]")
+                    continue
+
+        # 查看模式: 1, 2, ...
+        if user_input.isdigit():
+            idx = int(user_input)
+            if 1 <= idx <= total:
+                display_schedule(results[idx - 1], idx, total)
+                continue
+
+        console.print(f"[yellow]无效输入，请输入 1-{total} 或 s1-s{total}[/yellow]")
 
 
 if __name__ == "__main__":
